@@ -1,6 +1,4 @@
-# home.nix
 {
-  config,
   pkgs,
   username,
   ...
@@ -67,24 +65,28 @@ in {
     ../programs/git.nix
     ../programs/ssh.nix
   ];
-
   home = {
     inherit username homeDirectory;
 
     packages = stable-packages ++ unstable-packages;
-    age.secrets.anthropic = {
-      file = ../secrets/anthropic.age;
-    };
-
     sessionPath = [
       # "$HOME/.local/bin"
       # "$HOME/.local/share/bin"
       "/opt/homebrew/bin"
     ];
 
-    sessionVariables = {
-      ANTHROPIC_API_KEY = config.age.secrets.anthropic.path;
-    };
+sessionVariables = let
+  getSecret = key: ''
+    $(if [ -f "$HOME/.secrets.json" ]; then
+      jq -r '.${key} // empty' "$HOME/.secrets.json"
+    fi)'';
+in {
+  ANTHROPIC_API_KEY = getSecret "anthropic_api";
+  GITHUB_TOKEN = getSecret "github_token";  # Example of another secret
+  OPENAI_API_KEY = getSecret "openai_api";  # Another example
+  # Add as many secrets as you need
+};
+
 
     stateVersion = "24.11";
   };
